@@ -476,7 +476,7 @@ button {
     grid-template-columns: 180px 1fr 180px;
     gap: 20px;
     align-items: stretch;
-    min-height: 260px;
+    min-height: 300px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -513,8 +513,15 @@ button {
     flex-direction: column;
     gap: 6px;
     overflow-y: auto;
-    max-height: 200px;
+    max-height: 240px;
     flex: 1;
+    padding-right: 4px;
+}
+
+.cola-lado::-webkit-scrollbar { width: 6px; }
+.cola-lado::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
 }
 
 .cola-empty-lado {
@@ -560,10 +567,10 @@ button {
     background: var(--bg);
     border: 1px solid var(--border-strong);
     border-radius: 4px;
-    padding: 16px;
+    padding: 20px 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     justify-content: center;
     overflow: hidden;
 }
@@ -588,9 +595,10 @@ button {
 .puente-cuerpo::before { top: 4px; }
 .puente-cuerpo::after { bottom: 4px; }
 
+/* ============ CARRILES ============ */
 .carril {
     position: relative;
-    height: 70px;
+    height: 90px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 3px;
@@ -617,51 +625,59 @@ button {
 
 .carril.activo-norte {
     border-color: var(--info);
-    box-shadow: inset 0 0 20px rgba(96, 165, 250, 0.12);
+    box-shadow: inset 0 0 30px rgba(96, 165, 250, 0.15);
+    background: linear-gradient(180deg, var(--surface), rgba(96, 165, 250, 0.05));
 }
 
 .carril.activo-sur {
     border-color: var(--warning);
-    box-shadow: inset 0 0 20px rgba(251, 191, 36, 0.12);
+    box-shadow: inset 0 0 30px rgba(251, 191, 36, 0.15);
+    background: linear-gradient(180deg, var(--surface), rgba(251, 191, 36, 0.05));
 }
 
-/* Autos */
+/* ============ AUTOS ANIMADOS ============ */
 .auto {
     position: absolute;
     top: 50%;
-    transform: translateY(-50%);
     font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.5px;
-    padding: 6px 12px;
-    border-radius: 3px;
-    background: var(--ink);
-    color: var(--bg);
+    padding: 8px 14px;
+    border-radius: 4px;
     white-space: nowrap;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+    will-change: transform, left, right;
 }
 
 .auto.norte {
-    background: var(--info);
-    color: var(--bg);
-    animation: moverDerecha 3s linear forwards;
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(96, 165, 250, 0.5);
+    transform: translateY(-50%);
+    animation: moverDerecha 3.5s linear forwards;
 }
 
 .auto.sur {
-    background: var(--warning);
-    color: var(--bg);
-    animation: moverIzquierda 3s linear forwards;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #1a1a1a;
+    box-shadow: 0 4px 14px rgba(251, 191, 36, 0.5);
+    transform: translateY(-50%);
+    animation: moverIzquierda 3.5s linear forwards;
 }
 
 @keyframes moverDerecha {
-    from { left: -60px; }
-    to { left: calc(100% + 10px); }
+    0%   { left: -80px; opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { left: calc(100% + 10px); opacity: 0; }
 }
 
 @keyframes moverIzquierda {
-    from { right: -60px; left: auto; }
-    to { right: calc(100% + 10px); left: auto; }
+    0%   { right: -80px; left: auto; opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { right: calc(100% + 10px); left: auto; opacity: 0; }
 }
 
 .puente-separador {

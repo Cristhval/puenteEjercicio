@@ -5,7 +5,9 @@ let ultimoLogCount = 0;
 
 const $ = (id) => document.getElementById(id);
 
-// ============ INICIAR ============
+// ============================================================
+// INICIAR SIMULACIÓN
+// ============================================================
 $('btnIniciar').addEventListener('click', async () => {
     const body = {
         vehiculosNorte: parseInt($('norte').value),
@@ -22,6 +24,10 @@ $('btnIniciar').addEventListener('click', async () => {
     $('btnIniciar').disabled = true;
     tiempoInicio = Date.now();
     ultimoLogCount = 0;
+
+    // Limpiar carriles y colas antes de arrancar
+    limpiarCarriles();
+    resetColas();
 
     try {
         const res = await fetch(`${API}/iniciar`, {
@@ -46,7 +52,9 @@ $('btnIniciar').addEventListener('click', async () => {
     }
 });
 
-// ============ LIMPIAR ============
+// ============================================================
+// LIMPIAR
+// ============================================================
 $('btnLimpiar').addEventListener('click', async () => {
     await fetch(`${API}/limpiar`, { method: 'POST' });
     $('logContainer').innerHTML = '';
@@ -62,21 +70,27 @@ $('btnLimpiar').addEventListener('click', async () => {
     $('countSur').textContent = '0 cruzando';
     $('estadoNorte').classList.remove('activo');
     $('estadoSur').classList.remove('activo');
-    $('carrilNorte').className = 'carril carril-norte';
-    $('carrilSur').className = 'carril carril-sur';
-    $('carrilNorte').querySelectorAll('.auto').forEach(a => a.remove());
-    $('carrilSur').querySelectorAll('.auto').forEach(a => a.remove());
+    limpiarCarriles();
     resetColas();
     setStatus('Inactivo', '');
     ultimoLogCount = 0;
 });
+
+function limpiarCarriles() {
+    $('carrilNorte').querySelectorAll('.auto').forEach(a => a.remove());
+    $('carrilSur').querySelectorAll('.auto').forEach(a => a.remove());
+    $('carrilNorte').classList.remove('activo-norte');
+    $('carrilSur').classList.remove('activo-sur');
+}
 
 function resetColas() {
     $('colaNorte').innerHTML = '<div class="cola-empty-lado">Sin vehículos esperando</div>';
     $('colaSur').innerHTML = '<div class="cola-empty-lado">Sin vehículos esperando</div>';
 }
 
-// ============ POLLING ============
+// ============================================================
+// POLLING
+// ============================================================
 function arrancarPolling() {
     if (intervalId) clearInterval(intervalId);
     setStatus('Ejecutando…', 'running');
@@ -98,7 +112,7 @@ async function actualizar() {
         $('maxSim').textContent = data.maxSimultaneos;
         $('totalCruzados').textContent = data.totalCruzados;
 
-        // === Carriles ===
+        // === Carriles + autos animados ===
         actualizarCarriles(data);
 
         // === Cola de espera ===
@@ -107,7 +121,9 @@ async function actualizar() {
 
         // === Barra de progreso ===
         const total = parseInt($('norte').value) + parseInt($('sur').value);
-        const pct = Math.min(100, Math.round((data.totalCruzados / total) * 100));
+        const pct = total > 0
+            ? Math.min(100, Math.round((data.totalCruzados / total) * 100))
+            : 0;
         $('progressBar').style.setProperty('--progress', pct + '%');
         $('progressText').textContent = pct + '%';
 
@@ -126,7 +142,9 @@ async function actualizar() {
     }
 }
 
-// ============ CARRILES ============
+// ============================================================
+// CARRILES + AUTOS ANIMADOS
+// ============================================================
 function actualizarCarriles(data) {
     const dir = data.direccionActual;
 
@@ -148,21 +166,70 @@ function actualizarCarriles(data) {
 
     $('estadoNorte').classList.toggle('activo', data.vehiculosNorte > 0);
     $('estadoSur').classList.toggle('activo', data.vehiculosSur > 0);
+
+    // ★ Crear/eliminar autos según los eventos de la bitácora
+    sincronizarAutosEnCarril('carrilNorte', data.eventos, 'NORTE');
+    sincronizarAutosEnCarril('carrilSur', data.eventos, 'SUR');
 }
 
-// ============ ANÁLISIS DE ESPERA ============
+// ============================================================
+// Crea los .auto dentro del carril según los vehículos que
+// actualmente están cruzando (parseando la bitácora).
+// ============================================================
+function sincronizarAutosEnCarril(carrilId, eventos, direccion) {
+    const carril = $(carrilId);
+
+    // 1. Averiguar qué vehículos están cruzando AHORA en esta dirección
+    const dentro = new Set();
+    eventos.forEach(ev => {
+        const mEntra = ev.mensaje.match(/Vehículo (\d+) ENTRA al puente → (\w+)/);
+        const mSale  = ev.mensaje.match(/Vehículo (\d+) SALE del puente ← (\w+)/);
+        if (mEntra && mEntra[2] === direccion) dentro.add(mEntra[1]);
+        if (mSale  && mSale[2]  === direccion) dentro.delete(mSale[1]);
+    });
+
+    // 2. IDs que ya están dibujados en este carril
+    const dibujados = new Set(
+        Array.from(carril.querySelectorAll('.auto')).map(a => a.dataset.id)
+    );
+
+    // 3. Añadir los que faltan (autos nuevos)
+    dentro.forEach(id => {
+        if (!dibujados.has(id)) {
+            const auto = document.createElement('div');
+            auto.className = 'auto ' + direccion.toLowerCase();
+            auto.dataset.id = id;
+            auto.textContent = '#' + id;
+            carril.appendChild(auto);
+
+            // Limpieza automática al terminar la animación
+            auto.addEventListener('animationend', () => auto.remove(), { once: true });
+        }
+    });
+
+    // 4. Eliminar los que ya no están cruzando (por si el backend se atrasó)
+    carril.querySelectorAll('.auto').forEach(auto => {
+        if (!dentro.has(auto.dataset.id)) {
+            auto.remove();
+        }
+    });
+}
+
+// ============================================================
+// ANÁLISIS DE COLA DE ESPERA
+// ============================================================
 function analizarEspera(eventos) {
     const llegaron = { norte: new Set(), sur: new Set() };
     const entraron = new Set();
 
     eventos.forEach(ev => {
         const mLlegaNorte = ev.mensaje.match(/Vehículo (\d+) llega al puente \(dirección NORTE\)/);
-        const mLlegaSur = ev.mensaje.match(/Vehículo (\d+) llega al puente \(dirección SUR\)/);
-        const mEntra = ev.mensaje.match(/Vehículo (\d+) ENTRA/);
+        const mLlegaSur   = ev.mensaje.match(/Vehículo (\d+) llega al puente \(dirección SUR\)/);
+        const mEntra      = ev.mensaje.match(/Vehículo (\d+) ENTRA/);
 
         if (mLlegaNorte) llegaron.norte.add(mLlegaNorte[1]);
-        if (mLlegaSur) llegaron.sur.add(mLlegaSur[1]);
-        if (mEntra) entraron.add(mEntra[1]);
+        if (mLlegaSur)   llegaron.sur.add(mLlegaSur[1]);
+        if (mEntra)      entraron.add(mEntra[1]);
     });
 
     // Esperando = llegaron pero aún no entraron
@@ -203,7 +270,9 @@ function actualizarColas(esperandoNorte, esperandoSur) {
     }
 }
 
-// ============ LOG ============
+// ============================================================
+// LOG (BITÁCORA)
+// ============================================================
 function actualizarLog(eventos) {
     const cont = $('logContainer');
     const count = $('logCount');
@@ -236,7 +305,9 @@ function clasificarEvento(msg) {
     return '';
 }
 
-// ============ STATUS ============
+// ============================================================
+// STATUS BADGE
+// ============================================================
 function setStatus(texto, clase) {
     $('statusText').textContent = texto;
     $('statusBadge').className = 'status-badge ' + clase;
