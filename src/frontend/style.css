@@ -598,7 +598,7 @@ button {
 /* ============ CARRILES ============ */
 .carril {
     position: relative;
-    height: 90px;
+    height: 100px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 3px;
@@ -635,49 +635,32 @@ button {
     background: linear-gradient(180deg, var(--surface), rgba(251, 191, 36, 0.05));
 }
 
-/* ============ AUTOS ANIMADOS ============ */
+/* ============ AUTOS ANIMADOS (Controlados por JS) ============ */
 .auto {
     position: absolute;
-    top: 50%;
     font-family: 'Inter', sans-serif;
     font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.5px;
-    padding: 8px 14px;
+    padding: 6px 12px;
     border-radius: 4px;
     white-space: nowrap;
     z-index: 2;
-    will-change: transform, left, right;
+    transform: translateY(-50%);
+    top: 50%;
+    /* Ya no usamos transition aquí para que el movimiento por JS sea fluido */
 }
 
 .auto.norte {
     background: linear-gradient(135deg, #60a5fa, #3b82f6);
     color: #ffffff;
-    box-shadow: 0 4px 14px rgba(96, 165, 250, 0.5);
-    transform: translateY(-50%);
-    animation: moverDerecha 3.5s linear forwards;
+    box-shadow: 0 3px 10px rgba(96, 165, 250, 0.5);
 }
 
 .auto.sur {
     background: linear-gradient(135deg, #fbbf24, #f59e0b);
     color: #1a1a1a;
-    box-shadow: 0 4px 14px rgba(251, 191, 36, 0.5);
-    transform: translateY(-50%);
-    animation: moverIzquierda 3.5s linear forwards;
-}
-
-@keyframes moverDerecha {
-    0%   { left: -80px; opacity: 0; }
-    10%  { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { left: calc(100% + 10px); opacity: 0; }
-}
-
-@keyframes moverIzquierda {
-    0%   { right: -80px; left: auto; opacity: 0; }
-    10%  { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { right: calc(100% + 10px); left: auto; opacity: 0; }
+    box-shadow: 0 3px 10px rgba(251, 191, 36, 0.5);
 }
 
 .puente-separador {
