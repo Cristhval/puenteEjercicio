@@ -9,7 +9,7 @@ const animaciones = {
     NORTE: { autos: [] },
     SUR: { autos: [] }
 };
-const VELOCIDAD = 5.5; // Píxeles por frame
+const VELOCIDAD = 5.8; // Píxeles por frame
 const ESPACIADO_MINIMO = 60; // Píxeles de separación mínima entre autos
 let rafId = null;
 let timeoutNorte = null;
